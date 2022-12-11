@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="searchFrom" ref="queryRef" :inline="true" v-show="showSearch">
+    <el-form :model="searchFrom" ref="searchFromRef" :inline="true" v-show="showSearch">
 
       <el-form-item label="部门名称" prop="deptName">
         <el-input v-model="searchFrom.deptName" placeholder="请输入部门名称" clearable style="width: 200px"/>
@@ -40,9 +40,12 @@
         row-key="id"
         v-loading="loading"
         style="width: 100%"
+        lazy
+        :load="loadChildren"
+        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         @selection-change="selectionChangeHandle"
     >
-      <el-table-column label="名称" align="center" prop="name"/>
+      <el-table-column label="名称" prop="name"/>
       <el-table-column label="排序" align="center" prop="deptSort"/>
       <el-table-column label="状态" align="center" prop="enabled">
         <template #default="scope">
@@ -131,6 +134,16 @@ export default defineComponent({
 
     // 方法集合
     const methods = {
+      // 获取子集数据
+      loadChildren: (row, treeNode, resolve) => {
+        // 请求获取数据
+        deptAi.list({
+          fields: [{column: 'pid', condition: 'eq', value: row.id}]
+        }).then((response) => {
+          resolve(response.data)
+        })
+      },
+
       // 初始化表格数据---这里是调用ajax的
       init: () => {
         // 加载中
@@ -139,7 +152,8 @@ export default defineComponent({
         // 过滤条件
         let fieldCondition = [
           {column: 'deptName', condition: 'like', value: state.searchFrom.deptName},
-          {column: 'enabled', condition: 'eq', value: state.searchFrom.enabled}
+          {column: 'enabled', condition: 'eq', value: state.searchFrom.enabled},
+          {column: 'pid', condition: 'eq', value: 0}
         ]
 
         // 请求获取数据

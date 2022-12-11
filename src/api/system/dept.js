@@ -16,6 +16,19 @@ export function page(data) {
 
 
 /**
+ * 获得列表数据
+ * @returns {Promise<*>}
+ */
+export function list(data) {
+    return request({
+        url: `${apiPath}/list`,
+        method: 'post',
+        data: data
+    })
+}
+
+
+/**
  * 新增或者編輯
  * @param data
  * @returns {*}
