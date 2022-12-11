@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="searchFrom" ref="queryRef" :inline="true" v-show="showSearch">
+    <el-form :model="searchFrom" ref="searchFromRef" :inline="true" v-show="showSearch">
 
       <el-form-item label="岗位名称" prop="name">
         <el-input v-model="searchFrom.name" placeholder="请输入岗位名称" clearable style="width: 200px"/>
@@ -24,14 +24,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-            v-hasPermi="['system:dept:add']"
+            v-hasPermi="['system:job:add']"
             icon="Plus"
             type="primary"
             @click="addOrUpdateHandle()"
         >新增
         </el-button>
       </el-col>
-      <right-toolbar v-model:showSearch="showSearch"/>
+      <right-toolbar v-model:showSearch="showSearch"  @queryTable="init"/>
     </el-row>
 
     <!-- 表格 start-->
@@ -60,7 +60,7 @@
               icon="Edit"
               type="primary"
               @click="addOrUpdateHandle(scope.row.id)"
-              v-hasPermi="['system:dept:edit']">修改
+              v-hasPermi="['system:job:edit']">修改
           </el-button>
           <el-button
               size="small"
@@ -68,7 +68,7 @@
               type="primary"
               @click="deleteHandle(scope.row.id)"
               icon="Delete"
-              v-hasPermi="['system:dept:delete']">删除
+              v-hasPermi="['system:job:delete']">删除
           </el-button>
         </template>
       </el-table-column>

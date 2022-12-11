@@ -21,9 +21,9 @@ export function page(data) {
  * @returns {*}
  */
 export function saveAndUpdate(data) {
-    let method = params.userId ? 'put' : 'post'
+    let method = data.id ? 'put' : 'post'
     return request({
-        url: `${apiPath}/page`,
+        url: `${apiPath}`,
         method: method,
         data: data
     })
@@ -35,9 +35,9 @@ export function saveAndUpdate(data) {
  * @param id
  * @returns {*}
  */
-export function info(id) {
+export function detail(id) {
     return request({
-        url: `${apiPath}/${id}/info`,
+        url: `${apiPath}/detail/${id}`,
         method: 'get',
     })
 }
@@ -48,5 +48,9 @@ export function info(id) {
  * @returns {*}
  */
 export function remove(data) {
-    return request(apiPath, 'delete', data)
+    return request({
+        url: `${apiPath}`,
+        method: 'delete',
+        data: data
+    })
 }

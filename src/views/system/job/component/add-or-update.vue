@@ -61,17 +61,21 @@ export default defineComponent({
       isShowDialog: false,
       // 验证规则
       dataRule: {
-        code: [
-          {required: true, message: '请输入基类编码', trigger: 'blur'},
+        name: [
+          {required: true, message: '请输入岗位名称', trigger: 'blur'},
         ],
-        packageName: [
-          {required: true, message: '请输入基类包名', trigger: 'blur'},
+        jobSort: [
+          {required: true, message: '请输入排序值', trigger: 'blur'},
         ],
-        fields: [
-          {required: true, message: '请输入基类字段，多个字段，用英文逗号分隔', trigger: 'blur'},
+        enabled: [
+          {required: true, message: '请选择岗位状态', trigger: 'blur'},
         ],
       }
     })
+
+    // vue3+element-plus解决resetFields表单重置无效问题
+    const backupData = JSON.parse(JSON.stringify(state.dataForm))
+
 
     // 方法集合
     const methods = {
@@ -117,8 +121,11 @@ export default defineComponent({
       onCancel: () => {
         // vue3+element-plus解决resetFields表单重置无效问题
         state.isShowDialog = false;
-        state.dataForm = {}
-        dataFormRef.value.clearValidate()
+        // 这一步是防止（仅用下面这一步的话）点击增加在里面输入内容后关闭第二次点击增加再输入内容再关闭再点击增加会出现未初始化
+        dataFormRef.value.resetFields()
+        // 这一步是防止(仅用上面那一步)先点击编辑后再关闭弹窗再点击增加，显示的为数据2
+        state.dataForm = backupData
+
       }
     }
 
