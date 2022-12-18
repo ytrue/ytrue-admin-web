@@ -1,60 +1,68 @@
 import request from '@/utils/request'
 
-// 查询菜单列表
-export function listMenu(query) {
-  return request({
-    url: '/system/menu/list',
-    method: 'get',
-    params: query
-  })
-}
+const apiPath = '/sys/menu'
 
-// 查询菜单详细
-export function getMenu(menuId) {
+/**
+ * 获得列表数据
+ * @returns {Promise<*>}
+ */
+export function page(data) {
   return request({
-    url: '/system/menu/' + menuId,
-    method: 'get'
-  })
-}
-
-// 查询菜单下拉树结构
-export function treeselect() {
-  return request({
-    url: '/system/menu/treeselect',
-    method: 'get'
-  })
-}
-
-// 根据角色ID查询菜单下拉树结构
-export function roleMenuTreeselect(roleId) {
-  return request({
-    url: '/system/menu/roleMenuTreeselect/' + roleId,
-    method: 'get'
-  })
-}
-
-// 新增菜单
-export function addMenu(data) {
-  return request({
-    url: '/system/menu',
+    url: `${apiPath}/page`,
     method: 'post',
     data: data
   })
 }
 
-// 修改菜单
-export function updateMenu(data) {
+
+/**
+ * 获得列表数据
+ * @returns {Promise<*>}
+ */
+export function list(data) {
   return request({
-    url: '/system/menu',
-    method: 'put',
+    url: `${apiPath}/list`,
+    method: 'post',
     data: data
   })
 }
 
-// 删除菜单
-export function delMenu(menuId) {
+
+/**
+ * 新增或者編輯
+ * @param data
+ * @returns {*}
+ */
+export function saveAndUpdate(data) {
+  let method = data.id ? 'put' : 'post'
   return request({
-    url: '/system/menu/' + menuId,
-    method: 'delete'
+    url: `${apiPath}`,
+    method: method,
+    data: data
+  })
+}
+
+/**
+ * 获得信息
+ * @param id
+ * @returns {*}
+ */
+export function detail(id) {
+  return request({
+    url: `${apiPath}/detail/${id}`,
+    method: 'get',
+  })
+}
+
+/**
+ * 删除
+ * @param data
+ * @returns {*}
+ */
+export function remove(data) {
+  return request({
+    url: `${apiPath}`,
+    method: 'delete',
+    data: data
   })
 }

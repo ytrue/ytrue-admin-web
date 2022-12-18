@@ -14,6 +14,18 @@ export function page(data) {
     })
 }
 
+/**
+ * 获得列表数据
+ * @returns {Promise<*>}
+ */
+export function list() {
+    return request({
+        url: `${apiPath}/list`,
+        method: 'get',
+    })
+}
+
+
 
 /**
  * 新增或者編輯

@@ -14,7 +14,6 @@ export function page(data) {
     })
 }
 
-
 /**
  * 获得列表数据
  * @returns {Promise<*>}
@@ -34,23 +33,22 @@ export function list(data) {
  * @returns {*}
  */
 export function saveAndUpdate(data) {
-    let method = params.userId ? 'put' : 'post'
+    let method = data.id ? 'put' : 'post'
     return request({
-        url: `${apiPath}/page`,
+        url: `${apiPath}`,
         method: method,
         data: data
     })
 }
-
 
 /**
  * 获得信息
  * @param id
  * @returns {*}
  */
-export function info(id) {
+export function detail(id) {
     return request({
-        url: `${apiPath}/${id}/info`,
+        url: `${apiPath}/detail/${id}`,
         method: 'get',
     })
 }
@@ -61,5 +59,9 @@ export function info(id) {
  * @returns {*}
  */
 export function remove(data) {
-    return request(apiPath, 'delete', data)
+    return request({
+        url: `${apiPath}`,
+        method: 'delete',
+        data: data
+    })
 }

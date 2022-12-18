@@ -1,16 +1,15 @@
 <template>
   <div class="app-container">
-    <el-form :model="searchFrom" ref="searchFromRef" :inline="true" v-show="showSearch">
+    <el-form :model="searchFrom" ref="searchFromRef" :inline="true" v-show="showSearch" label-width="68px">
 
       <el-form-item label="部门名称" prop="deptName">
         <el-input v-model="searchFrom.deptName" placeholder="请输入部门名称" clearable style="width: 200px"/>
       </el-form-item>
 
-      <el-form-item label="状态" prop="enabled">
-        <el-select v-model="searchFrom.enabled" placeholder="部门状态" clearable style="width: 200px">
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="searchFrom.status" placeholder="请选择状态" clearable style="width: 200px">
           <el-option label="正常" :value="true"/>
           <el-option label="禁用" :value="false"/>
-
         </el-select>
       </el-form-item>
 
@@ -27,6 +26,7 @@
             v-hasPermi="['system:dept:add']"
             icon="Plus"
             type="primary"
+            @click="addOrUpdateHandle()"
         >新增
         </el-button>
       </el-col>
@@ -35,22 +35,18 @@
 
     <!-- 表格 start-->
     <el-table
+        default-expand-all
         :data="data"
         ref="tableRef"
-        row-key="id"
         v-loading="loading"
-        style="width: 100%"
-        lazy
-        :load="loadChildren"
-        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
-        @selection-change="selectionChangeHandle"
+        row-key="id"
     >
-      <el-table-column label="名称" prop="name"/>
+      <el-table-column label="部门名称" prop="deptName"/>
       <el-table-column label="排序" align="center" prop="deptSort"/>
-      <el-table-column label="状态" align="center" prop="enabled">
+      <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
-          <el-tag text type="success" v-if="scope.row.enabled">正常</el-tag>
-          <el-tag text type="info" v-if="!scope.row.enabled">禁用</el-tag>
+          <el-tag text type="success" v-if="scope.row.status">正常</el-tag>
+          <el-tag text type="info" v-if="!scope.row.status">禁用</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime"/>
@@ -76,32 +72,22 @@
       </el-table-column>
     </el-table>
     <!-- 表格 end-->
-
-    <!--分页 start-->
-    <el-pagination
-        @size-change="sizeChangeHandle"
-        @current-change="currentChangeHandle"
-        class="mt15"
-        :pager-count="5"
-        :page-sizes="[10, 50, 100]"
-        v-model:current-page="pagination.pageNum"
-        background
-        v-model:page-size="pagination.pageSize"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="pagination.total"
-    >
-    </el-pagination>
-    <!--分页 end-->
-
+    <!--新增和编辑弹窗-->
+    <AddOrUpdate ref="addOrUpdateRef" @handleSubmit="init"/>
   </div>
 </template>
 <script>
 import {defineComponent, onMounted, reactive, ref, toRefs} from "vue";
-import {ElMessage, ElMessageBox} from "element-plus";
 import * as  deptAi from "@/api/system/dept";
+import AddOrUpdate from '@/views/system/dept/component/add-or-update.vue';
+import {ElMessage, ElMessageBox} from "element-plus";
+import {treeDataTranslate} from "@//utils/common";
 
 export default defineComponent({
   name: "index",
+  components: {
+    AddOrUpdate
+  },
   setup() {
     // 弹窗的ref
     const addOrUpdateRef = ref()
@@ -116,34 +102,17 @@ export default defineComponent({
       data: [],
       // 加载
       loading: false,
-      // 分页数据
-      pagination: {
-        total: 0,
-        pageNum: 1,
-        pageSize: 10,
-      },
       // 选中数据
       selectIds: [],
       // 搜索数据·
       showSearch: true,
       searchFrom: {
         deptName: '',
-        enabled: ''
+        status: ''
       }
     })
-
     // 方法集合
     const methods = {
-      // 获取子集数据
-      loadChildren: (row, treeNode, resolve) => {
-        // 请求获取数据
-        deptAi.list({
-          fields: [{column: 'pid', condition: 'eq', value: row.id}]
-        }).then((response) => {
-          resolve(response.data)
-        })
-      },
-
       // 初始化表格数据---这里是调用ajax的
       init: () => {
         // 加载中
@@ -152,24 +121,16 @@ export default defineComponent({
         // 过滤条件
         let fieldCondition = [
           {column: 'deptName', condition: 'like', value: state.searchFrom.deptName},
-          {column: 'enabled', condition: 'eq', value: state.searchFrom.enabled},
-          {column: 'pid', condition: 'eq', value: 0}
+          {column: 'status', condition: 'eq', value: state.searchFrom.status}
         ]
-
         // 请求获取数据
-        deptAi.page({
-          currentPage: state.pagination.pageNum,
+        deptAi.list({
           fields: fieldCondition,
-          limit: state.pagination.pageSize,
-          orderField: "id",
-          asc: false
         }).then((response) => {
           // 表格数据赋值
-          state.data = response.data.records
-          // 分页赋值
-          state.pagination.total = response.data.total
-          state.pagination.pageNum = response.data.current
-          state.pagination.pageSize = response.data.size
+          // 删除掉hasChildren不然不显示
+          state.data = treeDataTranslate(response.data)
+
         }).finally(() => {
           // 加载完毕
           state.loading = false
@@ -178,12 +139,6 @@ export default defineComponent({
 
       // 删除数据
       deleteHandle: (id) => {
-        const deleteIds = id === undefined ? state.selectIds : [id]
-        // 校验是否有删除数据
-        if (deleteIds.length === 0) {
-          ElMessage({type: 'info', message: '请选择需要删除的数据'})
-          return
-        }
         ElMessageBox.confirm(
             '您确定要删除记录吗',
             '提示',
@@ -194,7 +149,7 @@ export default defineComponent({
             }
         ).then(() => {
           // 删除
-          deptAi.remove(deleteIds).then((response) => {
+          deptAi.remove([id]).then((response) => {
             ElMessage({type: 'success', message: response.message})
             methods.init()
           })
@@ -204,32 +159,13 @@ export default defineComponent({
 
       // 重置表单数据
       reset: () => {
-        // searchFromRef.value?.resetFields()
+        searchFromRef.value?.resetFields()
         methods.init()
       },
 
       // 打开新增和编辑的弹窗
       addOrUpdateHandle: (id) => {
-        // addOrUpdateRef.value.init(id);
-      },
-
-      // 复选框变化时
-      selectionChangeHandle: (val) => {
-        // 清空之前的
-        state.selectIds = []
-        val.forEach((item) => {
-          state.selectIds.push(item.id)
-        })
-      },
-      // 分页改变
-      sizeChangeHandle: (val) => {
-        state.pagination.pageSize = val;
-        methods.init();
-      },
-      // 分页改变
-      currentChangeHandle: (val) => {
-        state.pagination.pageNum = val;
-        methods.init();
+        addOrUpdateRef.value.init(id);
       }
     }
 

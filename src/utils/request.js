@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {ElLoading, ElMessage, ElMessageBox, ElNotification} from 'element-plus'
+import {ElLoading, ElMessage, ElMessageBox} from 'element-plus'
 import {getToken} from '@/utils/auth'
 import errorCode from '@/utils/errorCode'
 import {blobValidate, tansParams} from '@/utils/common'
@@ -27,7 +27,7 @@ service.interceptors.request.use(config => {
     // 是否需要防止数据重复提交
     const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
     if (getToken() && !isToken) {
-        config.headers['Authorization1'] = getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
+        config.headers['Authorized'] = getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
     }
     // get请求映射params参数
     if (config.method === 'get' && config.params) {
@@ -111,7 +111,7 @@ service.interceptors.response.use(res => {
     error => {
         console.log('err' + error)
         let {message} = error;
-        if (message == "Network Error") {
+        if (message === "Network Error") {
             message = "后端接口连接异常";
         } else if (message.includes("timeout")) {
             message = "系统接口请求超时";

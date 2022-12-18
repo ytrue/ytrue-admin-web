@@ -13,19 +13,40 @@
           ref="dataFormRef"
           label-width="120px"
       >
-        <el-form-item label="岗位名称" prop="name">
-          <el-input v-model="dataForm.name" placeholder="请输入岗位名称"/>
+        <el-form-item prop="beanName">
+          <template #label>
+                        <span>
+                           <el-tooltip content="spring bean名称, 如: testTask" placement="top">
+                              <el-icon><question-filled/></el-icon>
+                           </el-tooltip>
+                           bean名称
+                        </span>
+          </template>
+          <el-input v-model="dataForm.beanName" placeholder="请输入bean名称"/>
         </el-form-item>
 
-        <el-form-item label="排序" prop="jobSort">
-          <el-input-number v-model="dataForm.jobSort" controls-position="right" :min="0"/>
+        <el-form-item label="方法名称" prop="methodName">
+          <el-input v-model="dataForm.methodName" placeholder="请输入方法名称"/>
         </el-form-item>
 
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="dataForm.status">
-            <el-radio :label="true">正常</el-radio>
-            <el-radio :label="false">禁用</el-radio>
-          </el-radio-group>
+        <el-form-item label="参数" prop="params">
+          <el-input v-model="dataForm.params" placeholder="请输入参数"/>
+        </el-form-item>
+
+        <el-form-item label="cron表达式" prop="cronExpression">
+          <template #label>
+                        <span>
+                           <el-tooltip content="如: 0 0 12 * * ?" placement="top">
+                              <el-icon><question-filled/></el-icon>
+                           </el-tooltip>
+                           cron表达式
+                        </span>
+          </template>
+          <el-input v-model="dataForm.cronExpression" placeholder="请输入cron表达式"/>
+        </el-form-item>
+
+        <el-form-item label="备注" prop="remark">
+          <el-input type="textarea" v-model="dataForm.remark" placeholder="请输备注"/>
         </el-form-item>
       </el-form>
 
@@ -41,7 +62,7 @@
 
 <script>
 import {defineComponent, reactive, ref, toRefs} from 'vue';
-import * as  jobApi from "@/api/system/job";
+import * as  quartzApi from "@/api/monitor/quartz";
 import {ElMessage} from "element-plus";
 
 export default defineComponent({
@@ -57,15 +78,17 @@ export default defineComponent({
       isShowDialog: false,
       // 表单数据
       dataForm: {
-        name: null,
-        jobSort: 0,
-        status: true,
+        beanName: null,
+        params: null,
+        methodName: null,
+        remark: null,
+        cronExpression: null,
       },
       // 验证规则
       dataRule: {
-        name: [{required: true, message: '请输入岗位名称', trigger: 'blur'}],
-        jobSort: [{required: true, message: '请输入排序值', trigger: 'blur'}],
-        status: [{required: true, message: '请选择状态', trigger: 'blur'}],
+        beanName: [{required: true, message: '请输入bean名称', trigger: 'blur'}],
+        methodName: [{required: true, message: '请输入方法名称', trigger: 'blur'}],
+        cronExpression: [{required: true, message: '请输入cron表达式', trigger: 'blur'}],
       }
     })
 
@@ -83,7 +106,7 @@ export default defineComponent({
           return
         }
         // 调取ajax获取详情数据
-        jobApi
+        quartzApi
             .detail(state.formId)
             .then((response) => {
               // 进行赋值
@@ -98,7 +121,7 @@ export default defineComponent({
         dataFormRef.value.validate((valid) => {
           if (valid) {
             // 下面就是调用ajax
-            jobApi
+            quartzApi
                 .saveAndUpdate(state.dataForm)
                 .then((response) => {
                   ElMessage({type: 'success', message: response.message})
