@@ -9,8 +9,8 @@ const apiPath = '/sys/schedule'
 export function page(data) {
     return request({
         url: `${apiPath}/page`,
-        method: 'post',
-        data: data
+        method: 'get',
+        params: data
     })
 }
 
@@ -103,8 +103,8 @@ export function remove(data) {
 export function logPage(data) {
     return request({
         url: `/sys/scheduleLog/page`,
-        method: 'post',
-        data: data
+        method: 'get',
+        params: data
     })
 }
 

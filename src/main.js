@@ -1,4 +1,4 @@
-import {createApp} from 'vue'
+import {createApp, markRaw} from 'vue'
 
 import Cookies from 'js-cookie'
 
@@ -21,8 +21,7 @@ import elementIcons from '@/components/SvgIcon/svgicon'
 import './permission' // permission control
 import {addDateRange, handleTree, parseTime, resetForm} from '@/utils/common'
 
-// 分页组件
-import Pagination from '@/components/Pagination'
+
 // 自定义表格工具组件
 import RightToolbar from '@/components/RightToolbar'
 // 文件上传组件
@@ -33,8 +32,7 @@ import ImageUpload from "@/components/ImageUpload"
 import ImagePreview from "@/components/ImagePreview"
 // 自定义树选择组件
 import TreeSelect from '@/components/TreeSelect'
-// 字典标签组件
-import DictTag from '@/components/DictTag'
+
 
 
 const app = createApp(App)
@@ -47,8 +45,6 @@ app.config.globalProperties.handleTree = handleTree
 app.config.globalProperties.addDateRange = addDateRange
 
 // 全局组件挂载
-app.component('DictTag', DictTag)
-app.component('Pagination', Pagination)
 app.component('TreeSelect', TreeSelect)
 app.component('FileUpload', FileUpload)
 app.component('ImageUpload', ImageUpload)

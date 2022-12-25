@@ -4,8 +4,8 @@
       <el-col :span="24" :xs="24">
         <el-form :model="searchFrom" ref="searchFromRef" :inline="true" v-show="showSearch" label-width="68px">
 
-          <el-form-item label="岗位名称" prop="name">
-            <el-input v-model="searchFrom.name" placeholder="请输入岗位名称" clearable style="width: 200px"/>
+          <el-form-item label="岗位名称" prop="jobName">
+            <el-input v-model="searchFrom.jobName" placeholder="请输入岗位名称" clearable style="width: 200px"/>
           </el-form-item>
 
           <el-form-item label="状态" prop="status">
@@ -13,6 +13,16 @@
               <el-option label="正常" :value="true"/>
               <el-option label="禁用" :value="false"/>
             </el-select>
+          </el-form-item>
+
+          <el-form-item label="创建时间" style="width: 308px" prop="createTime">
+            <el-date-picker
+                v-model="searchFrom.createTime"
+                value-format="YYYY-MM-DD"
+                type="daterange"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+            ></el-date-picker>
           </el-form-item>
 
           <el-form-item>
@@ -75,7 +85,7 @@
                   icon="Edit"
                   type="primary"
                   @click="addOrUpdateHandle(scope.row.id)"
-                  v-hasPermi="['system:job:edit']">修改
+                  v-hasPermi="['system:job:update']">修改
               </el-button>
               <el-button
                   size="small"
@@ -104,143 +114,125 @@
     <AddOrUpdate ref="addOrUpdateRef" @handleSubmit="init"/>
   </div>
 </template>
-<script>
-import {defineComponent, onMounted, reactive, ref, toRefs} from "vue";
+<script setup name="index">
+// 弹窗的ref
+import {onMounted, reactive, ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import AddOrUpdate from '@/views/system/job/component/add-or-update.vue';
 import * as  jobApi from "@/api/system/job";
+import Pagination from '@/components/Pagination/index.vue'
 
-export default defineComponent({
-  name: "index",
-  components: {
-    AddOrUpdate
-  },
-  setup() {
-    // 弹窗的ref
-    const addOrUpdateRef = ref()
-    // 搜索的ref
-    const searchFromRef = ref()
-    // 表格的
-    const tableRef = ref()
-
-    // 数据集合
-    const state = reactive({
-      // 列表数据
-      data: [],
-      // 加载
-      loading: false,
-      // 选中数据
-      selectIds: [],
-      // 是否显示搜索框
-      showSearch: true,
-      // 搜索表单数据
-      searchFrom: {
-        name: '',
-        status: ''
-      },
-      // 分页数据
-      pagination: {
-        total: 0,
-        pageNum: 1,
-        pageSize: 10,
-      },
-    })
-
-    // 方法集合
-    const methods = {
-      // 初始化表格数据---这里是调用ajax的
-      init: () => {
-        // 加载中
-        state.loading = true
-
-        // 过滤条件
-        let fieldCondition = [
-          {column: 'name', condition: 'like', value: state.searchFrom.name},
-          {column: 'status', condition: 'eq', value: state.searchFrom.status}
-        ]
-
-        // 请求获取数据
-        jobApi.page({
-          currentPage: state.pagination.pageNum,
-          fields: fieldCondition,
-          limit: state.pagination.pageSize,
-          orderField: "id",
-          asc: false
-        }).then((response) => {
-          // 表格数据赋值
-          state.data = response.data.records
-          // 分页赋值
-          state.pagination.total = response.data.total
-          state.pagination.pageNum = response.data.current
-          state.pagination.pageSize = response.data.size
-        }).finally(() => {
-          // 加载完毕
-          state.loading = false
-        })
-      },
-
-      // 删除数据
-      deleteHandle: (id) => {
-        const deleteIds = id === undefined ? state.selectIds : [id]
-        // 校验是否有删除数据
-        if (deleteIds.length === 0) {
-          ElMessage({type: 'info', message: '请选择需要删除的数据'})
-          return
-        }
-        ElMessageBox.confirm(
-            '您确定要删除记录吗',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        ).then(() => {
-          // 删除
-          jobApi.remove(deleteIds).then((response) => {
-            ElMessage({type: 'success', message: response.message})
-            methods.init()
-          })
-        }).catch(() => {
-        })
-      },
-
-      // 重置表单数据
-      reset: () => {
-        searchFromRef.value?.resetFields()
-        methods.init()
-      },
-
-      // 打开新增和编辑的弹窗
-      addOrUpdateHandle: (id) => {
-        addOrUpdateRef.value.init(id);
-      },
-
-      // 复选框变化时
-      selectionChangeHandle: (val) => {
-        // 清空之前的
-        state.selectIds = []
-        val.forEach((item) => {
-          state.selectIds.push(item.id)
-        })
-      },
-    }
-
-    /**
-     * 页面加载时
-     */
-    onMounted(() => {
-      methods.init();
-    })
-
-    return {
-      addOrUpdateRef,
-      searchFromRef,
-      tableRef,
-
-      ...methods,
-      ...toRefs(state)
-    }
-  }
+const addOrUpdateRef = ref(null)
+// 搜索的ref
+const searchFromRef = ref(null)
+// 表格的
+const tableRef = ref(null)
+// 是否加载
+const loading = ref(false);
+// 选中数据
+const selectIds = ref([]);
+// 是否显示搜索框
+const showSearch = ref(true);
+// 列表数据
+const data = ref([]);
+// 搜索表单数据
+const searchFrom = reactive({
+  jobName: null,
+  status: null,
+  createTime: [],
 })
+// 分页数据
+const pagination = reactive({
+  total: 0,
+  pageNum: 1,
+  pageSize: 10,
+})
+
+/**
+ * 初始化表格数据---这里是调用ajax的
+ */
+function init() {
+  // 加载中
+  loading.value = true
+  // 请求获取数据
+  searchFrom.page = pagination.pageNum
+  searchFrom.limit = pagination.pageSize
+  jobApi.page(searchFrom).then((response) => {
+    // 表格数据赋值
+    data.value = response.data.records
+
+    // 分页赋值
+    pagination.total = response.data.total
+    pagination.pageNum = response.data.current
+    pagination.pageSize = response.data.size
+  }).finally(() => {
+    // 加载完毕
+    loading.value = false
+  })
+}
+
+/**
+ * 删除数据
+ * @param id
+ */
+function deleteHandle(id) {
+  const deleteIds = id === undefined ? selectIds.value : [id]
+  // 校验是否有删除数据
+  if (deleteIds.length === 0) {
+    ElMessage({type: 'info', message: '请选择需要删除的数据'})
+    return
+  }
+  ElMessageBox.confirm(
+      '您确定要删除记录吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    // 删除
+    jobApi.remove(deleteIds).then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
+    })
+  }).catch(() => {
+  })
+}
+
+/**
+ * 重置表单数据
+ */
+function reset() {
+  searchFromRef.value?.resetFields()
+  init()
+}
+
+/**
+ * 打开新增和编辑的弹窗
+ * @param id
+ */
+function addOrUpdateHandle(id) {
+  addOrUpdateRef.value.init(id);
+}
+
+/**
+ * 复选框变化时
+ * @param val
+ */
+function selectionChangeHandle(val) {
+  // 清空之前的
+  selectIds.value = []
+  val.forEach((item) => {
+    selectIds.value.push(item.id)
+  })
+}
+
+/**
+ * 页面加载时
+ */
+onMounted(() => {
+  init();
+})
+
 </script>

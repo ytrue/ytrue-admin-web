@@ -9,10 +9,11 @@ const apiPath = '/sys/role'
 export function page(data) {
   return request({
     url: `${apiPath}/page`,
-    method: 'post',
-    data: data
+    method: 'get',
+    params: data
   })
 }
+
 
 /**
  * 获得列表数据

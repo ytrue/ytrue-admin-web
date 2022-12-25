@@ -60,102 +60,95 @@
   </div>
 </template>
 
-<script>
-import {defineComponent, reactive, ref, toRefs} from 'vue';
+<script setup name="AddOrUpdate">
+import {ref} from 'vue';
 import * as  quartzApi from "@/api/monitor/quartz";
 import {ElMessage} from "element-plus";
 
-export default defineComponent({
-  name: 'AddOrUpdate',
-  setup: function (props, {emit}) {
-    // 表单的ref
-    const dataFormRef = ref(null)
-    // 初始化数据
-    const state = reactive({
-      // 表单id
-      formId: 0,
-      // 是否弹窗
-      isShowDialog: false,
-      // 表单数据
-      dataForm: {
-        beanName: null,
-        params: null,
-        methodName: null,
-        remark: null,
-        cronExpression: null,
-      },
-      // 验证规则
-      dataRule: {
-        beanName: [{required: true, message: '请输入bean名称', trigger: 'blur'}],
-        methodName: [{required: true, message: '请输入方法名称', trigger: 'blur'}],
-        cronExpression: [{required: true, message: '请输入cron表达式', trigger: 'blur'}],
-      }
-    })
+const emit = defineEmits(['handleSubmit'])
 
-    // vue3+element-plus解决resetFields表单重置无效问题
-    const backupData = JSON.parse(JSON.stringify(state.dataForm))
+// 表单的ref
+const dataFormRef = ref(null)
 
-    // 方法集合
-    const methods = {
-      // 初始化数据
-      init: (id) => {
-        state.formId = id || 0
-        if (!state.formId) {
-          // 把弹窗打开
-          state.isShowDialog = true
-          return
-        }
-        // 调取ajax获取详情数据
-        quartzApi
-            .detail(state.formId)
-            .then((response) => {
-              // 进行赋值
-              state.dataForm = response.data
-              // 把弹窗打开
-              state.isShowDialog = true
-            })
-
-      },
-      // 提交表单
-      onSubmit: () => {
-        dataFormRef.value.validate((valid) => {
-          if (valid) {
-            // 下面就是调用ajax
-            quartzApi
-                .saveAndUpdate(state.dataForm)
-                .then((response) => {
-                  ElMessage({type: 'success', message: response.message})
-                  // 通知父端组件提交完成了
-                  emit('handleSubmit')
-                  methods.onCancel()
-                })
-          } else {
-            return false
-          }
-        })
-      },
-
-      // 关闭弹窗
-      onCancel: () => {
-        // vue3+element-plus解决resetFields表单重置无效问题
-        state.isShowDialog = false;
-        // 这一步是防止（仅用下面这一步的话）点击增加在里面输入内容后关闭第二次点击增加再输入内容再关闭再点击增加会出现未初始化
-        dataFormRef.value.resetFields()
-        // 这一步是防止(仅用上面那一步)先点击编辑后再关闭弹窗再点击增加，显示的为数据2
-        state.dataForm = backupData
-
-      }
-    }
-
-    return {
-      dataFormRef,
-      ...toRefs(state),
-      ...methods
-    }
-  }
+// 表单id
+const formId = ref(0)
+// 是否弹窗
+const isShowDialog = ref(false)
+// 表单数据
+const dataForm = ref({
+  beanName: null,
+  params: null,
+  methodName: null,
+  remark: null,
+  cronExpression: null,
 })
+// 验证规则
+const dataRule = {
+  beanName: [{required: true, message: '请输入bean名称', trigger: 'blur'}],
+  methodName: [{required: true, message: '请输入方法名称', trigger: 'blur'}],
+  cronExpression: [{required: true, message: '请输入cron表达式', trigger: 'blur'}],
+}
+// vue3+element-plus解决resetFields表单重置无效问题
+const backupData = JSON.parse(JSON.stringify(dataForm.value))
+
+
+/**
+ * 初始化数据
+ * @param id
+ */
+function init(id) {
+  formId.value = id || 0
+  if (!formId.value) {
+    // 把弹窗打开
+    isShowDialog.value = true
+    return
+  }
+  // 调取ajax获取详情数据
+  quartzApi
+      .detail(formId.value)
+      .then((response) => {
+        // 进行赋值
+        dataForm.value = response.data
+        // 把弹窗打开
+        isShowDialog.value = true
+      })
+
+}
+
+/**
+ * 提交表单
+ */
+function onSubmit() {
+  dataFormRef.value.validate((valid) => {
+    if (valid) {
+      // 下面就是调用ajax
+      quartzApi
+          .saveAndUpdate(dataForm.value)
+          .then((response) => {
+            ElMessage({type: 'success', message: response.message})
+            // 通知父端组件提交完成了
+            emit('handleSubmit')
+            onCancel()
+          })
+    } else {
+      return false
+    }
+  })
+}
+
+/**
+ * 关闭弹窗
+ */
+function onCancel() {
+  // vue3+element-plus解决resetFields表单重置无效问题
+  isShowDialog.value = false;
+  // 这一步是防止（仅用下面这一步的话）点击增加在里面输入内容后关闭第二次点击增加再输入内容再关闭再点击增加会出现未初始化
+  dataFormRef.value.resetFields()
+  // 这一步是防止(仅用上面那一步)先点击编辑后再关闭弹窗再点击增加，显示的为数据2
+  dataForm.value = backupData
+}
+
+// 主动暴露childMethod方法
+defineExpose({init})
 </script>
 
-<style scoped>
-
-</style>

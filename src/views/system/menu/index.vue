@@ -2,16 +2,25 @@
   <div class="app-container">
     <el-form :model="searchFrom" ref="searchFromRef" :inline="true" v-show="showSearch" label-width="68px">
 
-      <el-form-item label="菜单名称" prop="deptName">
-        <el-input v-model="searchFrom.deptName" placeholder="请输入菜单名称" clearable style="width: 200px"/>
+      <el-form-item label="菜单名称" prop="menuName">
+        <el-input v-model="searchFrom.menuName" placeholder="请输入菜单名称" clearable style="width: 200px"/>
       </el-form-item>
 
-      <el-form-item label="状态" prop="enabled">
-        <el-select v-model="searchFrom.enabled" placeholder="请选择状态" clearable style="width: 200px">
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="searchFrom.status" placeholder="请选择状态" clearable style="width: 200px">
           <el-option label="正常" :value="true"/>
           <el-option label="禁用" :value="false"/>
-
         </el-select>
+      </el-form-item>
+
+      <el-form-item label="创建时间" style="width: 308px" prop="createTime">
+        <el-date-picker
+            v-model="searchFrom.createTime"
+            value-format="YYYY-MM-DD"
+            type="daterange"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+        ></el-date-picker>
       </el-form-item>
 
       <el-form-item>
@@ -42,7 +51,7 @@
         row-key="id"
     >
       <el-table-column prop="menuName" label="菜单名称" :show-overflow-tooltip="true" width="160"></el-table-column>
-      <el-table-column  prop="icon" label="图标" align="center" width="100">
+      <el-table-column prop="icon" label="图标" align="center" width="100">
         <template #default="scope">
           <svg-icon :icon-class="scope.row.icon"/>
         </template>
@@ -66,7 +75,7 @@
               icon="Edit"
               type="primary"
               @click="addOrUpdateHandle(scope.row.id)"
-              v-hasPermi="['system:menu:edit']">修改
+              v-hasPermi="['system:menu:update']">修改
           </el-button>
           <el-button
               size="small"
@@ -84,125 +93,96 @@
     <AddOrUpdate ref="addOrUpdateRef" @handleSubmit="init"/>
   </div>
 </template>
-<script>
-import {defineComponent, onMounted, reactive, ref, toRefs} from "vue";
+<script setup name="index">
+import {onMounted, reactive, ref} from "vue";
 import * as  menuApi from "@/api/system/menu";
 import AddOrUpdate from '@/views/system/menu/component/add-or-update.vue';
 import {ElMessage, ElMessageBox} from "element-plus";
 import {treeDataTranslate} from "@//utils/common";
 
-export default defineComponent({
-  name: "index",
-  components: {
-    AddOrUpdate
-  },
-  setup() {
-    // 弹窗的ref
-    const addOrUpdateRef = ref()
-    // 搜索的ref
-    const searchFromRef = ref()
-    // 表格的
-    const tableRef = ref()
+const addOrUpdateRef = ref(null)
+// 搜索的ref
+const searchFromRef = ref(null)
+// 表格的
+const tableRef = ref(null)
+// 是否加载
+const loading = ref(false);
+// 选中数据
+const selectIds = ref([]);
+// 是否显示搜索框
+const showSearch = ref(true);
+// 列表数据
+const data = ref([]);
+// 搜索表单数据
+const searchFrom = reactive({
+  menuName: null,
+  status: null,
+  createTime: []
+})
 
-    // 数据集合
-    const state = reactive({
-      // 列表数据
-      data: [],
-      // 加载
-      loading: false,
-      // 选中数据
-      selectIds: [],
-      // 搜索数据·
-      showSearch: true,
-      searchFrom: {
-        deptName: '',
-        enabled: ''
+
+/**
+ * 初始化表格数据---这里是调用ajax的
+ */
+function init() {
+  // 加载中
+  loading.value = true
+  // 请求获取数据
+  menuApi.list(searchFrom).then((response) => {
+    // 表格数据赋值
+    // 删除掉hasChildren不然不显示
+    data.value = treeDataTranslate(response.data)
+
+  }).finally(() => {
+    // 加载完毕
+    loading.value = false
+  })
+}
+
+/**
+ * 删除数据
+ * @param id
+ */
+function deleteHandle(id) {
+  ElMessageBox.confirm(
+      '您确定要删除记录吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
       }
+  ).then(() => {
+    // 删除
+    menuApi.remove([id]).then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
     })
+  }).catch(() => {
+  })
+}
+
+/**
+ * 重置表单数据
+ */
+function reset() {
+  searchFromRef.value?.resetFields()
+  init()
+}
+
+/**
+ * 打开新增和编辑的弹窗
+ * @param id
+ */
+function addOrUpdateHandle(id) {
+  addOrUpdateRef.value.init(id);
+}
 
 
-    // 方法集合
-    const methods = {
-      // 初始化表格数据---这里是调用ajax的
-      init: () => {
-        // 加载中
-        state.loading = true
-
-        // 过滤条件
-        let fieldCondition = [
-          {column: 'name', condition: 'like', value: state.searchFrom.deptName},
-          {column: 'enabled', condition: 'eq', value: state.searchFrom.enabled}
-        ]
-        // 请求获取数据
-        menuApi.list({
-          fields: fieldCondition,
-        }).then((response) => {
-          // 表格数据赋值
-          // 删除掉hasChildren不然不显示
-          state.data = treeDataTranslate(response.data)
-
-        }).finally(() => {
-          // 加载完毕
-          state.loading = false
-        })
-      },
-
-      // 删除数据
-      deleteHandle: (id) => {
-        ElMessageBox.confirm(
-            '您确定要删除记录吗',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        ).then(() => {
-          // 删除
-          menuApi.remove([id]).then((response) => {
-            ElMessage({type: 'success', message: response.message})
-            methods.init()
-          })
-        }).catch(() => {
-        })
-      },
-
-      // 重置表单数据
-      reset: () => {
-        searchFromRef.value?.resetFields()
-        methods.init()
-      },
-
-      // 打开新增和编辑的弹窗
-      addOrUpdateHandle: (id) => {
-        addOrUpdateRef.value.init(id);
-      },
-
-      // 复选框变化时
-      selectionChangeHandle: (val) => {
-        // 清空之前的
-        state.selectIds = []
-        val.forEach((item) => {
-          state.selectIds.push(item.id)
-        })
-      },
-    }
-
-    /**
-     * 页面加载时
-     */
-    onMounted(() => {
-      methods.init();
-    })
-
-    return {
-      addOrUpdateRef,
-      searchFromRef,
-      tableRef,
-
-      ...methods,
-      ...toRefs(state)
-    }
-  }
+/**
+ * 页面加载时
+ */
+onMounted(() => {
+  init();
 })
 </script>

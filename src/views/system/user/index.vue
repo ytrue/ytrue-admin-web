@@ -47,11 +47,22 @@
             />
           </el-form-item>
 
-          <el-form-item label="状态" prop="enabled">
-            <el-select v-model="searchFrom.enabled" placeholder="请选择状态" clearable style="width: 200px">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="searchFrom.status" placeholder="请选择状态" clearable style="width: 200px">
               <el-option label="正常" :value="true"/>
               <el-option label="禁用" :value="false"/>
             </el-select>
+          </el-form-item>
+
+
+          <el-form-item label="创建时间" style="width: 308px" prop="createTime">
+            <el-date-picker
+                v-model="searchFrom.createTime"
+                value-format="YYYY-MM-DD"
+                type="daterange"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+            ></el-date-picker>
           </el-form-item>
 
           <el-form-item>
@@ -100,10 +111,10 @@
           <el-table-column label="电话" align="center" prop="phone"/>
           <el-table-column label="邮箱" align="center" prop="email"/>
           <el-table-column label="部门" align="center" prop="deptName"/>
-          <el-table-column label="状态" align="center" prop="enabled">
+          <el-table-column label="状态" align="center" prop="status">
             <template #default="scope">
-              <el-tag text type="success" v-if="scope.row.enabled">正常</el-tag>
-              <el-tag text type="info" v-if="!scope.row.enabled">禁用</el-tag>
+              <el-tag text type="success" v-if="scope.row.status">正常</el-tag>
+              <el-tag text type="info" v-if="!scope.row.status">禁用</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="创建时间" align="center" prop="createTime"/>
@@ -144,190 +155,159 @@
   </div>
 </template>
 
-<script>
-import {defineComponent, onMounted, reactive, ref, toRefs, watch} from "vue";
+<script setup name="index">
+import {onMounted, reactive, ref, watch} from "vue";
 import * as userApi from "@//api/system/user";
 import {ElMessage, ElMessageBox} from "element-plus";
 import * as deptAi from "@//api/system/dept";
 import {treeDataTranslate} from "@//utils/common";
 import AddOrUpdate from '@/views/system/user/component/add-or-update.vue';
+import Pagination from '@/components/Pagination/index.vue'
 
-export default defineComponent({
-  name: "index",
-  components: {
-    AddOrUpdate
-  },
-  setup() {
-    // 弹窗的ref
-    const addOrUpdateRef = ref()
-    // 搜索的ref
-    const searchFromRef = ref()
-    // 表格的
-    const tableRef = ref()
-    // deptTreeRef
-    const deptTreeRef = ref();
+// 弹窗的ref
+const addOrUpdateRef = ref()
+// 搜索的ref
+const searchFromRef = ref()
+// 表格的
+const tableRef = ref()
+// deptTreeRef
+const deptTreeRef = ref();
 
-    // 数据集合
-    const state = reactive({
-      // 列表数据
-      data: [],
-      // 加载
-      loading: false,
-      // 分页数据
-      pagination: {
-        total: 0,
-        pageNum: 1,
-        pageSize: 10,
-      },
-      // 选中数据
-      selectIds: [],
-      // 搜索数据·
-      showSearch: true,
-      // 搜索数据
-      searchFrom: {
-        username: '',
-        phone: '',
-        email: '',
-        enabled: ''
-      },
-      // 部门数据
-      deptId: '',
-      deptTree: [],
+// 是否加载
+const loading = ref(false);
+// 选中数据
+const selectIds = ref([]);
+// 是否显示搜索框
+const showSearch = ref(true);
+// 列表数据
+const data = ref([]);
+// 搜索表单数据
+const searchFrom = reactive({
+  username: null,
+  phone: null,
+  email: null,
+  status: null,
+  createTime: []
+})
+// 部门数据
+const deptId = ref('')
+const deptTree = ref([])
+
+// 分页数据
+const pagination = reactive({
+  total: 0,
+  pageNum: 1,
+  pageSize: 10,
+})
+
+let deptName = ref('')
+// 根据名称筛选部门树
+watch(deptName, val => {
+  deptTreeRef.value.filter(val)
+});
+
+
+// dept数据初始化
+function deptTreeInit() {
+  // 请求获取数据
+  deptAi.list().then((response) => {
+    let data = response.data
+    data.push({
+      "id": 0,
+      "pid": 0,
+      "deptName": "顶级部门"
     })
+    deptTree.value = treeDataTranslate(data)
+  })
+}
 
-    // 部门名称，这个只能放外面，不然监听不到
-    let deptName = ref('')
+// 初始化表格数据---这里是调用ajax的
+function init(deptId = '') {
+  // 加载中
+  loading.value = true
 
-    // 根据名称筛选部门树
-    watch(deptName, val => {
-      deptTreeRef.value.filter(val)
-    });
-
-    // 方法集合
-    const methods = {
-      // dept数据初始化
-      deptTreeInit() {
-        // 请求获取数据
-        deptAi.list({}).then((response) => {
-          let data = response.data
-          data.push({
-            "id": 0,
-            "pid": 0,
-            "deptName": "顶级部门"
-          })
-          state.deptTree = treeDataTranslate(data)
-        })
-      },
-      // 初始化表格数据---这里是调用ajax的
-      init: (deptId = '') => {
-        // 加载中
-        state.loading = true
-        // 过滤条件
-        let fieldCondition = [
-          {column: 'username', condition: 'like', value: state.searchFrom.username},
-          {column: 'phone', condition: 'like', value: state.searchFrom.phone},
-          {column: 'email', condition: 'like', value: state.searchFrom.email},
-          {column: 'enabled', condition: 'eq', value: state.searchFrom.enabled},
-        ]
-
-        // 追加一下
-        if (deptId !== '') {
-          fieldCondition.push({column: 'deptId', condition: 'eq', value: deptId})
-        }
-
-        // 请求获取数据
-        userApi.page({
-          currentPage: state.pagination.pageNum,
-          fields: fieldCondition,
-          limit: state.pagination.pageSize,
-        }).then((response) => {
-          // 表格数据赋值
-          state.data = response.data.records
-          // 分页赋值
-          state.pagination.total = response.data.total
-          state.pagination.pageNum = response.data.current
-          state.pagination.pageSize = response.data.size
-        }).finally(() => {
-          // 加载完毕
-          state.loading = false
-        })
-      },
-      // 重置表单数据
-      reset: () => {
-        searchFromRef.value?.resetFields()
-        methods.init(state.deptId)
-      },
-
-      // 删除数据
-      deleteHandle: (id) => {
-        const deleteIds = id === undefined ? state.selectIds : [id]
-        // 校验是否有删除数据
-        if (deleteIds.length === 0) {
-          ElMessage({type: 'info', message: '请选择需要删除的数据'})
-          return
-        }
-        ElMessageBox.confirm(
-            '您确定要删除记录吗',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        ).then(() => {
-          // 删除
-          userApi.remove(deleteIds).then((response) => {
-            ElMessage({type: 'success', message: response.message})
-            methods.init()
-          })
-        }).catch(() => {
-        })
-      },
-
-      // 节点单击事件
-      handleNodeClick: (data) => {
-        state.deptId = data.id !== 0 ? data.id : ''
-        methods.init(state.deptId)
-      },
-
-      // 通过条件过滤节点
-      filterNode: (value, data) => {
-        if (!value) return true
-        return data.deptName.indexOf(value) !== -1
-      },
-
-      // 打开新增和编辑的弹窗
-      addOrUpdateHandle: (id) => {
-        addOrUpdateRef.value.init(id);
-      },
-      // 复选框变化时
-      selectionChangeHandle: (val) => {
-        // 清空之前的
-        state.selectIds = []
-        val.forEach((item) => {
-          state.selectIds.push(item.id)
-        })
-      },
-    }
-
-    /**
-     * 页面加载时
-     */
-    onMounted(() => {
-      methods.deptTreeInit()
-      methods.init()
-    })
-
-    return {
-      addOrUpdateRef,
-      searchFromRef,
-      tableRef,
-      deptTreeRef,
-      deptName,
-
-      ...methods,
-      ...toRefs(state)
-    }
+  // 追加一下
+  if (deptId !== '') {
+    searchFrom.deptId = deptId;
   }
+  searchFrom.page = pagination.pageNum
+  searchFrom.limit = pagination.pageSize
+  // 请求获取数据
+  userApi.page(searchFrom).then((response) => {
+    // 表格数据赋值
+    data.value = response.data.records
+    // 分页赋值
+    pagination.total = response.data.total
+    pagination.pageNum = response.data.current
+    pagination.pageSize = response.data.size
+  }).finally(() => {
+    // 加载完毕
+    loading.value = false
+  })
+}
+
+// 重置表单数据
+function reset() {
+  searchFromRef.value?.resetFields()
+  init(deptId.value)
+}
+
+// 删除数据
+function deleteHandle(id) {
+  const deleteIds = id === undefined ? selectIds.value : [id]
+  // 校验是否有删除数据
+  if (deleteIds.length === 0) {
+    ElMessage({type: 'info', message: '请选择需要删除的数据'})
+    return
+  }
+  ElMessageBox.confirm(
+      '您确定要删除记录吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    // 删除
+    userApi.remove(deleteIds).then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
+    })
+  })
+}
+
+// 节点单击事件
+function handleNodeClick(data) {
+  deptId.value = data.id !== 0 ? data.id : ''
+  init(deptId.value)
+}
+
+// 通过条件过滤节点
+function filterNode(value, data) {
+  if (!value) return true
+  return data.deptName.indexOf(value) !== -1
+}
+
+// 打开新增和编辑的弹窗
+function addOrUpdateHandle(id) {
+  addOrUpdateRef.value.init(id);
+}
+
+// 复选框变化时
+function selectionChangeHandle(val) {
+  // 清空之前的
+  selectIds.value = []
+  val.forEach((item) => {
+    selectIds.value.push(item.id)
+  })
+}
+
+/**
+ * 页面加载时
+ */
+onMounted(() => {
+  deptTreeInit()
+  init()
 })
 </script>

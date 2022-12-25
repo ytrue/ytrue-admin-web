@@ -56,7 +56,7 @@
                       v-model="dataForm.icon"
                       placeholder="点击选择图标"
                       @blur="showSelectIcon"
-                      v-clickOutside="hideSelectIcon"
+                      v-click-outside="hideSelectIcon"
                       readonly>
                     <template #prefix>
                       <svg-icon
@@ -132,9 +132,9 @@
             </el-form-item>
           </el-col>
 
-          <el-col :span="12" v-if="dataForm.menuType !== 'M'">
+          <el-col v-if="dataForm.menuType !== 'M'">
             <el-form-item>
-              <el-input v-model="dataForm.perms" placeholder="请输入权限标识" maxlength="100"/>
+              <el-input type="textarea" v-model="dataForm.perms" placeholder="请输入权限标识"/>
               <template #label>
                         <span>
                            <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasPermi('system:user:list')`)"
@@ -224,160 +224,162 @@
   </div>
 </template>
 
-<script>
-import {defineComponent, reactive, ref, toRefs} from 'vue';
-import {ClickOutside, ElMessage} from "element-plus";
+<script setup name="AddOrUpdate">
+import {ref} from 'vue';
+import {ElMessage} from "element-plus";
 import * as menuApi from "@//api/system/menu";
 import {treeDataTranslate} from "@//utils/common";
 import IconSelect from "@/components/IconSelect";
+import {ClickOutside as vClickOutside} from 'element-plus'
 
+const emit = defineEmits(['handleSubmit'])
+// 表单的ref
+const dataFormRef = ref(null)
+// icon的ref
+const iconSelectRef = ref(null)
 
-export default defineComponent({
-  name: 'AddOrUpdate',
-  directives: {ClickOutside},
-  components: {
-    IconSelect
-  },
-  setup: function (props, {emit}) {
-    // 表单的ref
-    const dataFormRef = ref(null)
-    const iconSelectRef = ref(null)
-    // 初始化数据
-    const state = reactive({
-      // 表单id
-      formId: 0,
-      // 是否弹窗
-      isShowDialog: false,
-      // 表单数据
-      dataForm: {
-        pid: null,
-        menuName: null,
-        icon: null,
-        menuType: 'M',
-        perms: null,
-        menuSort: 0,
-        isFrame: false,
-        isCache: true,
-        visible: true,
-        status: true,
-        query: null,
-      },
-      // 菜单tree数据
-      menuTree: [],
-      // 验证规则
-      dataRule: {
-        pid: [{required: true, message: "选择上级菜单", trigger: "blur"}],
-        menuName: [{required: true, message: "请输入菜单名称", trigger: "blur"}],
-        menuSort: [{required: true, message: "请输入排序值", trigger: "blur"}],
-        path: [{required: true, message: "请输入路由地址", trigger: "blur"}]
-      },
-      // 是否显示icon
-      showChooseIcon: false
-    })
-
-    // 方法集合
-    const methods = {
-      // 初始化数据
-      init: async (id) => {
-
-        // 请求获取数据
-        await menuApi.list({}).then((response) => {
-          let data = response.data
-          data.push({
-            "id": 0,
-            "pid": 0,
-            "menuName": "顶级菜单"
-          })
-          state.menuTree = treeDataTranslate(data)
-        })
-
-        state.formId = id || 0
-        if (!state.formId) {
-          // 把弹窗打开
-          state.isShowDialog = true
-          return
-        }
-        // 调取ajax获取详情数据
-        await menuApi
-            .detail(state.formId)
-            .then((response) => {
-              // 进行赋值
-              state.dataForm = response.data
-              // 把弹窗打开
-              state.isShowDialog = true
-            })
-      },
-      // 提交表单
-      onSubmit: () => {
-        dataFormRef.value.validate((valid) => {
-          if (valid) {
-            // 下面就是调用ajax
-            menuApi
-                .saveAndUpdate(state.dataForm)
-                .then((response) => {
-                  ElMessage({type: 'success', message: response.message})
-                  // 通知父端组件提交完成了
-                  emit('handleSubmit')
-                  methods.onCancel()
-                })
-          } else {
-            return false
-          }
-        })
-      },
-      // 关闭弹窗
-      onCancel: () => {
-        // vue3+element-plus解决resetFields表单重置无效问题
-        state.isShowDialog = false;
-        state.showChooseIcon = false
-        // 这一步是防止（仅用下面这一步的话）点击增加在里面输入内容后关闭第二次点击增加再输入内容再关闭再点击增加会出现未初始化
-        dataFormRef.value.resetFields()
-        // 这一步是防止(仅用上面那一步)先点击编辑后再关闭弹窗再点击增加，显示的为数据2,tree无法处理
-        state.dataForm = {
-          pid: null,
-          menuName: null,
-          icon: null,
-          menuType: 'M',
-          perms: null,
-          menuSort: 0,
-          isFrame: false,
-          isCache: true,
-          visible: true,
-          status: true,
-          query: null,
-        }
-      },
-      // 展示下拉图标
-      showSelectIcon: () => {
-        iconSelectRef.value.reset();
-        state.showChooseIcon = true;
-      },
-      //选择图标
-      selectedIcon: (name) => {
-        state.dataForm.icon = name;
-        state.showChooseIcon = false;
-      },
-      // 图标外层点击隐藏下拉列表
-      hideSelectIcon: (event) => {
-
-        let elem = event.relatedTarget || event.srcElement || event.target || event.currentTarget;
-        let className = elem.className;
-        if (className !== "el-input__inner") {
-          state.showChooseIcon = false;
-        }
-      },
-    }
-
-    return {
-      dataFormRef,
-      iconSelectRef,
-      ...toRefs(state),
-      ...methods
-    }
-  }
+// 表单id
+const formId = ref(0)
+// 是否弹窗
+const isShowDialog = ref(false)
+// 是否显示icon
+const showChooseIcon = ref(false)
+// 表单数据
+const dataForm = ref({
+  pid: null,
+  menuName: null,
+  icon: null,
+  menuType: 'M',
+  perms: null,
+  menuSort: 0,
+  isFrame: false,
+  isCache: true,
+  visible: true,
+  status: true,
+  query: null,
 })
+// 菜单tree数据
+const menuTree = ref([])
+// 验证规则
+const dataRule = {
+  pid: [{required: true, message: "选择上级菜单", trigger: "blur"}],
+  menuName: [{required: true, message: "请输入菜单名称", trigger: "blur"}],
+  menuSort: [{required: true, message: "请输入排序值", trigger: "blur"}],
+  path: [{required: true, message: "请输入路由地址", trigger: "blur"}]
+}
+
+
+/**
+ * 初始化数据
+ * @param id
+ * @returns {Promise<void>}
+ */
+async function init(id) {
+  // 请求获取数据
+  await menuApi.list().then((response) => {
+    let data = response.data
+    data.push({
+      "id": 0,
+      "pid": 0,
+      "menuName": "顶级菜单"
+    })
+    menuTree.value = treeDataTranslate(data)
+  })
+
+  formId.value = id || 0
+  if (!formId.value) {
+    // 把弹窗打开
+    isShowDialog.value = true
+    return
+  }
+  // 调取ajax获取详情数据
+  await menuApi
+      .detail(formId.value)
+      .then((response) => {
+        // 进行赋值
+        dataForm.value = response.data
+        // 把弹窗打开
+        isShowDialog.value = true
+      })
+}
+
+/**
+ * 提交表单
+ */
+function onSubmit() {
+  dataFormRef.value.validate((valid) => {
+    if (valid) {
+      // 下面就是调用ajax
+      menuApi
+          .saveAndUpdate(dataForm.value)
+          .then((response) => {
+            ElMessage({type: 'success', message: response.message})
+            // 通知父端组件提交完成了
+            emit('handleSubmit')
+            onCancel()
+          })
+    } else {
+      return false
+    }
+  })
+}
+
+/**
+ * 关闭弹窗
+ */
+function onCancel() {
+  // vue3+element-plus解决resetFields表单重置无效问题
+  isShowDialog.value = false;
+  showChooseIcon.value = false
+  // 这一步是防止（仅用下面这一步的话）点击增加在里面输入内容后关闭第二次点击增加再输入内容再关闭再点击增加会出现未初始化
+  dataFormRef.value.resetFields()
+  // 这一步是防止(仅用上面那一步)先点击编辑后再关闭弹窗再点击增加，显示的为数据2,tree无法处理
+  dataForm.value = {
+    pid: null,
+    menuName: null,
+    icon: null,
+    menuType: 'M',
+    perms: null,
+    menuSort: 0,
+    isFrame: false,
+    isCache: true,
+    visible: true,
+    status: true,
+    query: null,
+  }
+}
+
+/**
+ * 展示下拉图标
+ */
+function showSelectIcon() {
+  iconSelectRef.value.reset();
+  showChooseIcon.value = true;
+}
+
+/**
+ * 选择图标
+ * @param name
+ */
+function selectedIcon(name) {
+  dataForm.value.icon = name;
+  showChooseIcon.value = false;
+}
+
+/**
+ * 图标外层点击隐藏下拉列表
+ * @param event
+ */
+function hideSelectIcon(event) {
+
+  let elem = event.relatedTarget || event.srcElement || event.target || event.currentTarget;
+  let className = elem.className;
+  if (className !== "el-input__inner") {
+    showChooseIcon.value = false;
+  }
+}
+
+// 主动暴露childMethod方法
+defineExpose({init})
 </script>
 
-<style scoped>
-
-</style>

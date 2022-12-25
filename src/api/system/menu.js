@@ -22,8 +22,8 @@ export function page(data) {
 export function list(data) {
   return request({
     url: `${apiPath}/list`,
-    method: 'post',
-    data: data
+    method: 'get',
+    params: data
   })
 }
 

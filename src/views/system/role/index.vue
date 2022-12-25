@@ -19,6 +19,16 @@
             </el-select>
           </el-form-item>
 
+          <el-form-item label="创建时间" style="width: 308px" prop="createTime">
+            <el-date-picker
+                v-model="searchFrom.createTime"
+                value-format="YYYY-MM-DD"
+                type="daterange"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+            ></el-date-picker>
+          </el-form-item>
+
           <el-form-item>
             <el-button type="primary" icon="Search" @click="init">搜索</el-button>
             <el-button icon="Refresh" @click="reset">重置</el-button>
@@ -80,7 +90,7 @@
                   icon="Edit"
                   type="primary"
                   @click="addOrUpdateHandle(scope.row.id)"
-                  v-hasPermi="['system:role:edit']">修改
+                  v-hasPermi="['system:role:update']">修改
               </el-button>
               <el-button
                   size="small"
@@ -110,151 +120,125 @@
     <AddOrUpdate ref="addOrUpdateRef" @handleSubmit="init"/>
   </div>
 </template>
-<script>
-import {defineComponent, onMounted, reactive, ref, toRefs} from "vue";
+<script setup name="index">
+import {onMounted, reactive, ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import AddOrUpdate from '@/views/system/role/component/add-or-update.vue';
 import * as  roleApi from "@/api/system/role";
+import Pagination from '@/components/Pagination/index.vue'
 
-export default defineComponent({
-  name: "index",
-  components: {
-    AddOrUpdate
-  },
-  setup() {
-    // 弹窗的ref
-    const addOrUpdateRef = ref()
-    // 搜索的ref
-    const searchFromRef = ref()
-    // 表格的
-    const tableRef = ref()
+const addOrUpdateRef = ref(null)
+// 搜索的ref
+const searchFromRef = ref(null)
+// 表格的
+const tableRef = ref(null)
 
-    // 数据集合
-    const state = reactive({
-      // 列表数据
-      data: [],
-      // 加载
-      loading: false,
-      // 分页数据
-      pagination: {
-        total: 0,
-        pageNum: 1,
-        pageSize: 10,
-      },
-      // 选中数据
-      selectIds: [],
-      // 搜索数据·
-      showSearch: true,
-      searchFrom: {
-        roleName: '',
-        status: '',
-        roleCode: ''
-      },
-    })
+// 是否加载
+const loading = ref(false);
+// 选中数据
+const selectIds = ref([]);
+// 是否显示搜索框
+const showSearch = ref(true);
+// 列表数据
+const data = ref([]);
+// 搜索表单数据
+const searchFrom = reactive({
+  roleName: null,
+  status: null,
+  roleCode: null,
+  createTime: []
+})
+// 分页数据
+const pagination = reactive({
+  total: 0,
+  pageNum: 1,
+  pageSize: 10,
+})
 
-    // 方法集合
-    const methods = {
-      // 初始化表格数据---这里是调用ajax的
-      init: () => {
-        // 加载中
-        state.loading = true
+/**
+ * 初始化表格数据---这里是调用ajax的
+ */
+function init() {
+  // 加载中
+  loading.value = true
 
-        // 过滤条件
-        let fieldCondition = [
-          {column: 'roleName', condition: 'like', value: state.searchFrom.roleName},
-          {column: 'status', condition: 'eq', value: state.searchFrom.status},
-          {column: 'roleCode', condition: 'eq', value: state.searchFrom.roleCode}
-        ]
+  // 请求获取数据
+  searchFrom.page = pagination.pageNum
+  searchFrom.limit = pagination.pageSize
+  roleApi.page(searchFrom).then((response) => {
+    // 表格数据赋值
+    data.value = response.data.records
+    // 分页赋值
+    pagination.total = response.data.total
+    pagination.pageNum = response.data.current
+    pagination.pageSize = response.data.size
+  }).finally(() => {
+    // 加载完毕
+    loading.value = false
+  })
+}
 
-        // 请求获取数据
-        roleApi.page({
-          currentPage: state.pagination.pageNum,
-          fields: fieldCondition,
-          limit: state.pagination.pageSize,
-          orderField: "id",
-          asc: false
-        }).then((response) => {
-          // 表格数据赋值
-          state.data = response.data.records
-          // 分页赋值
-          state.pagination.total = response.data.total
-          state.pagination.pageNum = response.data.current
-          state.pagination.pageSize = response.data.size
-        }).finally(() => {
-          // 加载完毕
-          state.loading = false
-        })
-      },
-
-      // 删除数据
-      deleteHandle: (id) => {
-        const deleteIds = id === undefined ? state.selectIds : [id]
-        // 校验是否有删除数据
-        if (deleteIds.length === 0) {
-          ElMessage({type: 'info', message: '请选择需要删除的数据'})
-          return
-        }
-        ElMessageBox.confirm(
-            '您确定要删除记录吗',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        ).then(() => {
-          // 删除
-          roleApi.remove(deleteIds).then((response) => {
-            ElMessage({type: 'success', message: response.message})
-            methods.init()
-          })
-        }).catch(() => {
-        })
-      },
-
-      // 重置表单数据
-      reset: () => {
-        searchFromRef.value?.resetFields()
-        methods.init()
-      },
-
-      // 打开新增和编辑的弹窗
-      addOrUpdateHandle: (id) => {
-        addOrUpdateRef.value.init(id);
-      },
-
-      // 复选框变化时
-      selectionChangeHandle: (val) => {
-        // 清空之前的
-        state.selectIds = []
-        val.forEach((item) => {
-          state.selectIds.push(item.id)
-        })
-      },
-    }
-
-    /**
-     * 页面加载时
-     */
-    onMounted(() => {
-      methods.init();
-    })
-
-    return {
-      addOrUpdateRef,
-      searchFromRef,
-      tableRef,
-
-      ...methods,
-      ...toRefs(state)
-    }
+/**
+ * 删除数据
+ * @param id
+ */
+function deleteHandle(id) {
+  const deleteIds = id === undefined ? selectIds.value : [id]
+  // 校验是否有删除数据
+  if (deleteIds.length === 0) {
+    ElMessage({type: 'info', message: '请选择需要删除的数据'})
+    return
   }
+  ElMessageBox.confirm(
+      '您确定要删除记录吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    // 删除
+    roleApi.remove(deleteIds).then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
+    })
+  }).catch(() => {
+  })
+}
+
+/**
+ * 重置表单数据
+ */
+function reset() {
+  searchFromRef.value?.resetFields()
+  init()
+}
+
+/**
+ * 打开新增和编辑的弹窗
+ * @param id
+ */
+function addOrUpdateHandle(id) {
+  addOrUpdateRef.value.init(id);
+}
+
+/**
+ * 复选框变化时
+ * @param val
+ */
+function selectionChangeHandle(val) {
+  // 清空之前的
+  selectIds.value = []
+  val.forEach((item) => {
+    selectIds.value.push(item.id)
+  })
+}
+
+/**
+ * 页面加载时
+ */
+onMounted(() => {
+  init();
 })
 </script>
-<!--<style>-->
-<!--.pagination-container .el-pagination {-->
-<!--  right: 2%;-->
-<!--  position: relative;-->
-<!--}-->
-
-<!--</style>-->

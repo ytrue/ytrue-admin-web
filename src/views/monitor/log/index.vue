@@ -46,6 +46,16 @@
             </el-select>
           </el-form-item>
 
+          <el-form-item label="操作时间" style="width: 308px" prop="startTime">
+            <el-date-picker
+                v-model="searchFrom.startTime"
+                value-format="YYYY-MM-DD"
+                type="daterange"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+            ></el-date-picker>
+          </el-form-item>
+
           <el-form-item>
             <el-button type="primary" icon="Search" @click="init">搜索</el-button>
             <el-button icon="Refresh" @click="reset">重置</el-button>
@@ -56,7 +66,7 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button
-                v-hasPermi="['system:job:delete']"
+                v-hasPermi="['system:log:delete']"
                 icon="Delete"
                 type="danger"
                 :disabled="!selectIds.length"
@@ -67,7 +77,7 @@
 
           <el-col :span="1.5">
             <el-button
-                v-hasPermi="['system:job:delete']"
+                v-hasPermi="['system:log:clear']"
                 icon="MessageBox"
                 type="info"
                 @click="clearHandle">
@@ -165,161 +175,146 @@
     <!--分页 end-->
   </div>
 </template>
-<script>
-import {defineComponent, onMounted, reactive, ref, toRefs} from "vue";
+<script setup name="index">
+import {onMounted, reactive, ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import * as  logApi from "@/api/monitor/log";
+import Pagination from '@/components/Pagination/index.vue'
 
-export default defineComponent({
-  name: "index",
-  setup() {
-    // 弹窗的ref
-    const addOrUpdateRef = ref()
-    // 搜索的ref
-    const searchFromRef = ref()
-    // 表格的
-    const tableRef = ref()
-
-    // 数据集合
-    const state = reactive({
-      // 列表数据
-      data: [],
-      // 加载
-      loading: false,
-      // 选中数据
-      selectIds: [],
-      // 是否显示搜索框
-      showSearch: true,
-      // 搜索表单数据
-      searchFrom: {
-        consumingTime: null,
-        operator: null,
-        requestIp: null,
-        requestUri: null,
-        httpMethod: null,
-        type: null,
-      },
-      // 分页数据
-      pagination: {
-        total: 0,
-        pageNum: 1,
-        pageSize: 10,
-      },
-    })
-
-    // 方法集合
-    const methods = {
-      // 初始化表格数据---这里是调用ajax的
-      init: () => {
-        // 加载中
-        state.loading = true
-
-        // 过滤条件
-        let fieldCondition = [
-          {column: 'operator', condition: 'like', value: state.searchFrom.operator},
-          {column: 'httpMethod', condition: 'eq', value: state.searchFrom.httpMethod},
-          {column: 'consumingTime', condition: 'eq', value: state.searchFrom.consumingTime},
-          {column: 'requestIp', condition: 'eq', value: state.searchFrom.requestIp},
-          {column: 'requestUri', condition: 'eq', value: state.searchFrom.requestUri},
-          {column: 'type', condition: 'eq', value: state.searchFrom.type},
-        ]
-
-        // 请求获取数据
-        logApi.page({
-          currentPage: state.pagination.pageNum,
-          fields: fieldCondition,
-          limit: state.pagination.pageSize,
-        }).then((response) => {
-          // 表格数据赋值
-          state.data = response.data.records
-          // 分页赋值
-          state.pagination.total = response.data.total
-          state.pagination.pageNum = response.data.current
-          state.pagination.pageSize = response.data.size
-        }).finally(() => {
-          // 加载完毕
-          state.loading = false
-        })
-      },
-
-      // 清空操作
-      clearHandle: () => {
-        ElMessageBox.confirm(
-            '您确定要清空记录吗',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        ).then(() => {
-          // 删除
-          logApi.clear().then((response) => {
-            ElMessage({type: 'success', message: response.message})
-            methods.init()
-          })
-        })
-      },
-
-      // 删除数据
-      deleteHandle: (id) => {
-        const deleteIds = id === undefined ? state.selectIds : [id]
-        // 校验是否有删除数据
-        if (deleteIds.length === 0) {
-          ElMessage({type: 'info', message: '请选择需要删除的数据'})
-          return
-        }
-        ElMessageBox.confirm(
-            '您确定要删除记录吗',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning',
-            }
-        ).then(() => {
-          // 删除
-          logApi.remove(deleteIds).then((response) => {
-            ElMessage({type: 'success', message: response.message})
-            methods.init()
-          })
-        }).catch(() => {
-        })
-      },
-
-      // 重置表单数据
-      reset: () => {
-        searchFromRef.value?.resetFields()
-        methods.init()
-      },
-
-      // 复选框变化时
-      selectionChangeHandle: (val) => {
-        // 清空之前的
-        state.selectIds = []
-        val.forEach((item) => {
-          state.selectIds.push(item.id)
-        })
-      },
-    }
-
-    /**
-     * 页面加载时
-     */
-    onMounted(() => {
-      methods.init();
-    })
-
-    return {
-      addOrUpdateRef,
-      searchFromRef,
-      tableRef,
-
-      ...methods,
-      ...toRefs(state)
-    }
-  }
+// 搜索的ref
+const searchFromRef = ref(null)
+// 表格的
+const tableRef = ref(null)
+// 是否加载
+const loading = ref(false);
+// 选中数据
+const selectIds = ref([]);
+// 是否显示搜索框
+const showSearch = ref(true);
+// 列表数据
+const data = ref([]);
+// 搜索表单数据
+const searchFrom = reactive({
+  consumingTime: null,
+  operator: null,
+  requestIp: null,
+  requestUri: null,
+  httpMethod: null,
+  type: null,
+  startTime: null,
 })
+// 分页数据
+const pagination = reactive({
+  total: 0,
+  pageNum: 1,
+  pageSize: 10,
+})
+
+/**
+ * 初始化表格数据---这里是调用ajax的
+ */
+function init() {
+  // 加载中
+  loading.value = true
+
+  // 过滤条件
+  let fieldCondition = [
+    {column: 'operator', condition: 'like', value: searchFrom.operator},
+    {column: 'httpMethod', condition: 'eq', value: searchFrom.httpMethod},
+    {column: 'consumingTime', condition: 'eq', value: searchFrom.consumingTime},
+    {column: 'requestIp', condition: 'eq', value: searchFrom.requestIp},
+    {column: 'requestUri', condition: 'eq', value: searchFrom.requestUri},
+    {column: 'type', condition: 'eq', value: searchFrom.type},
+    {column: 'startTime', condition: 'between', value: searchFrom.startTime}
+  ]
+
+  // 请求获取数据
+  logApi.page({
+    page: pagination.pageNum,
+    filters: fieldCondition,
+    limit: pagination.pageSize,
+    sorts: [{column: "startTime", asc: false}]
+  }).then((response) => {
+    // 表格数据赋值
+    data.value = response.data.records
+    // 分页赋值
+    pagination.total = response.data.total
+    pagination.pageNum = response.data.current
+    pagination.pageSize = response.data.size
+  }).finally(() => {
+    // 加载完毕
+    loading.value = false
+  })
+}
+
+// 清空操作
+function clearHandle() {
+  ElMessageBox.confirm(
+      '您确定要清空记录吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    // 删除
+    logApi.clear().then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
+    })
+  })
+}
+
+
+// 删除数据
+function deleteHandle(id) {
+  const deleteIds = id === undefined ? selectIds.value : [id]
+  // 校验是否有删除数据
+  if (deleteIds.length === 0) {
+    ElMessage({type: 'info', message: '请选择需要删除的数据'})
+    return
+  }
+  ElMessageBox.confirm(
+      '您确定要删除记录吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    // 删除
+    logApi.remove(deleteIds).then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
+    })
+  }).catch(() => {
+  })
+}
+
+// 重置表单数据
+function reset() {
+  searchFromRef.value?.resetFields()
+  init()
+}
+
+// 复选框变化时
+function selectionChangeHandle(val) {
+  // 清空之前的
+  selectIds.value = []
+  val.forEach((item) => {
+    selectIds.value.push(item.id)
+  })
+}
+
+/**
+ * 页面加载时
+ */
+onMounted(() => {
+  init();
+})
+
 </script>
 
 <style scoped>
