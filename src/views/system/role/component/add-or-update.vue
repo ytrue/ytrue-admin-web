@@ -105,9 +105,9 @@
 import {defineComponent, reactive, ref, toRefs} from 'vue';
 import * as  roleApi from "@/api/system/role";
 import {ElMessage} from "element-plus";
-import * as menuApi from "@//api/system/menu";
+import * as menuApi from "@/api/system/menu";
 import {treeDataTranslate} from "@//utils/common";
-import * as deptAi from "@//api/system/dept";
+import * as deptAi from "@/api/system/dept";
 
 const emit = defineEmits(['handleSubmit'])
 

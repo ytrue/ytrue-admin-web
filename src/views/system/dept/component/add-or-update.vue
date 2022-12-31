@@ -67,8 +67,8 @@
 <script setup name="AddOrUpdate">
 import {ref} from 'vue';
 import * as  deptApi from "@/api/system/dept";
+import * as deptAi from "@/api/system/dept";
 import {ElMessage} from "element-plus";
-import * as deptAi from "@//api/system/dept";
 import {treeDataTranslate} from "@//utils/common";
 
 const emit = defineEmits(['handleSubmit'])
@@ -109,12 +109,14 @@ async function init(id) {
   // 请求获取数据
   await deptAi.list().then((response) => {
     let data = response.data
-    data.push({
-      "id": 0,
-      "pid": 0,
-      "deptName": "顶级部门"
-    })
-    deptTree.value = treeDataTranslate(data)
+    if (data.length > 0) {
+      data.push({
+        "id": 0,
+        "pid": 0,
+        "deptName": "顶级部门"
+      })
+      deptTree.value = treeDataTranslate(data)
+    }
   })
 
   formId.value = id || 0
@@ -175,6 +177,7 @@ function onCancel() {
     status: true,
   }
 }
+
 // 主动暴露childMethod方法
 defineExpose({init})
 </script>

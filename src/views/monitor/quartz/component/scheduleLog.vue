@@ -131,7 +131,7 @@
 <script setup name="ScheduleLog">
 
 import {reactive, ref} from "vue";
-import * as quartzApi from "@//api/monitor/quartz";
+import * as quartzApi from "@/api/monitor/quartz";
 import {ElMessage, ElMessageBox} from "element-plus";
 import Pagination from '@/components/Pagination/index.vue'
 

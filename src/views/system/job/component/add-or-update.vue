@@ -41,7 +41,7 @@
 
 <script setup name="AddOrUpdate">
 import {ref} from 'vue';
-import * as jobApi from "@//api/system/job";
+import * as jobApi from "@/api/system/job";
 import {ElMessage} from "element-plus";
 
 const emit = defineEmits(['handleSubmit'])

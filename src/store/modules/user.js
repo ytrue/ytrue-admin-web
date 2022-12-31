@@ -1,6 +1,6 @@
 import {getInfo, login, logout} from '@/api/login'
 import {getToken, removeToken, setToken} from '@/utils/auth'
-import defAva from '@//assets/images/profile.jpg'
+import defAva from '@//assets/images/avatar.jpeg'
 
 const useUserStore = defineStore(
     'user',
@@ -38,7 +38,9 @@ const useUserStore = defineStore(
                         const user = res.data.user
                         const avatar = (user.avatar == "" || user.avatar == null) ? defAva : import.meta.env.VITE_APP_BASE_API + user.avatar;
 
-                        let roles = res.data.roles
+                        console.log(res.data)
+
+                        let roles = res.data.roleCodes
                         let permissions = res.data.permissions
 
                         if (roles && roles.length > 0) { // 验证返回的roles是否是一个非空数组

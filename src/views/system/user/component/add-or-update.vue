@@ -95,9 +95,9 @@
 import {ref} from 'vue';
 import * as  jobApi from "@/api/system/job";
 import {ElMessage} from "element-plus";
-import * as roleApi from "@//api/system/role";
-import * as deptAi from "@//api/system/dept";
-import * as userApi from "@//api/system/user";
+import * as roleApi from "@/api/system/role";
+import * as deptAi from "@/api/system/dept";
+import * as userApi from "@/api/system/user";
 import {treeDataTranslate} from "@//utils/common";
 
 const emit = defineEmits(['handleSubmit'])

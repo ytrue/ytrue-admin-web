@@ -74,6 +74,15 @@
           <el-table-column label="ID" align="center" prop="id"/>
           <el-table-column label="角色名称" align="center" prop="roleName"/>
           <el-table-column label="角色标识" align="center" prop="roleCode"/>
+          <el-table-column label="权限范围" align="center" prop="dataScope">
+            <template #default="scope">
+             <span v-if="scope.row.dataScope ===1">全部数据权限</span>
+             <span v-if="scope.row.dataScope ===2">自定数据权限</span>
+             <span v-if="scope.row.dataScope ===3">本部门数据权限</span>
+             <span v-if="scope.row.dataScope ===4">本部门及以下数据权限</span>
+             <span v-if="scope.row.dataScope ===5">仅本人数据权限</span>
+            </template>
+          </el-table-column>
           <el-table-column label="排序" align="center" prop="roleSort"/>
           <el-table-column label="状态" align="center" prop="status">
             <template #default="scope">

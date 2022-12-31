@@ -107,7 +107,14 @@
           <el-table-column label="ID" align="center" prop="id"/>
           <el-table-column label="用户名称" align="center" prop="username"/>
           <el-table-column label="用户昵称" align="center" prop="nickName"/>
-          <el-table-column label="性别" align="center" prop="gender"/>
+
+          <el-table-column label="性别" align="center" prop="gender">
+            <template #default="scope">
+              <span v-if="scope.row.gender ===1">男</span>
+              <span v-if="scope.row.gender ===0">女</span>
+            </template>
+          </el-table-column>
+
           <el-table-column label="电话" align="center" prop="phone"/>
           <el-table-column label="邮箱" align="center" prop="email"/>
           <el-table-column label="部门" align="center" prop="deptName"/>
@@ -126,7 +133,7 @@
                   icon="Edit"
                   type="primary"
                   @click="addOrUpdateHandle(scope.row.id)"
-                  v-hasPermi="['system:user:edit']">修改
+                  v-hasPermi="['system:user:update']">修改
               </el-button>
               <el-button
                   v-if="!scope.row.isAdmin"
@@ -137,6 +144,16 @@
                   icon="Delete"
                   v-hasPermi="['system:user:delete']">删除
               </el-button>
+
+              <el-button
+                  size="small"
+                  link
+                  type="primary"
+                  @click="resetPasswordHandle(scope.row.id)"
+                  icon="Key"
+                  v-hasPermi="['system:user:resetPassword']">重置密码
+              </el-button>
+
             </template>
           </el-table-column>
         </el-table>
@@ -157,9 +174,9 @@
 
 <script setup name="index">
 import {onMounted, reactive, ref, watch} from "vue";
-import * as userApi from "@//api/system/user";
+import * as userApi from "@/api/system/user";
 import {ElMessage, ElMessageBox} from "element-plus";
-import * as deptAi from "@//api/system/dept";
+import * as deptAi from "@/api/system/dept";
 import {treeDataTranslate} from "@//utils/common";
 import AddOrUpdate from '@/views/system/user/component/add-or-update.vue';
 import Pagination from '@/components/Pagination/index.vue'
@@ -212,12 +229,14 @@ function deptTreeInit() {
   // 请求获取数据
   deptAi.list().then((response) => {
     let data = response.data
-    data.push({
-      "id": 0,
-      "pid": 0,
-      "deptName": "顶级部门"
-    })
-    deptTree.value = treeDataTranslate(data)
+    if (data.length > 0) {
+      data.push({
+        "id": 0,
+        "pid": 0,
+        "deptName": "顶级部门"
+      })
+      deptTree.value = treeDataTranslate(data)
+    }
   })
 }
 
@@ -271,6 +290,28 @@ function deleteHandle(id) {
   ).then(() => {
     // 删除
     userApi.remove(deleteIds).then((response) => {
+      ElMessage({type: 'success', message: response.message})
+      init()
+    })
+  })
+}
+
+/**
+ * 重置密码
+ * @param id
+ */
+function resetPasswordHandle(id) {
+  ElMessageBox.confirm(
+      '您确定要重置该账号密码吗',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    // 删除
+    userApi.resetPassword(id).then((response) => {
       ElMessage({type: 'success', message: response.message})
       init()
     })

@@ -227,7 +227,7 @@
 <script setup name="AddOrUpdate">
 import {ref} from 'vue';
 import {ElMessage} from "element-plus";
-import * as menuApi from "@//api/system/menu";
+import * as menuApi from "@/api/system/menu";
 import {treeDataTranslate} from "@//utils/common";
 import IconSelect from "@/components/IconSelect";
 import {ClickOutside as vClickOutside} from 'element-plus'

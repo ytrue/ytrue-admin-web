@@ -69,6 +69,8 @@ import { getCodeImg } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from "@/utils/jsencrypt";
 import useUserStore from '@/store/modules/user'
+import {getCurrentInstance, ref} from "vue";
+import {useRouter} from "vue-router";
 
 const userStore = useUserStore()
 const router = useRouter();

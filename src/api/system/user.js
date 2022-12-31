@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import qs from "qs";
 
 const apiPath = '/sys/user'
 
@@ -7,11 +8,11 @@ const apiPath = '/sys/user'
  * @returns {Promise<*>}
  */
 export function page(data) {
-  return request({
-    url: `${apiPath}/page`,
-    method: 'get',
-    params: data
-  })
+    return request({
+        url: `${apiPath}/page`,
+        method: 'get',
+        params: data
+    })
 }
 
 
@@ -21,12 +22,12 @@ export function page(data) {
  * @returns {*}
  */
 export function saveAndUpdate(data) {
-  let method = data.id ? 'put' : 'post'
-  return request({
-    url: `${apiPath}`,
-    method: method,
-    data: data
-  })
+    let method = data.id ? 'put' : 'post'
+    return request({
+        url: `${apiPath}`,
+        method: method,
+        data: data
+    })
 }
 
 
@@ -36,10 +37,10 @@ export function saveAndUpdate(data) {
  * @returns {*}
  */
 export function detail(id) {
-  return request({
-    url: `${apiPath}/detail/${id}`,
-    method: 'get',
-  })
+    return request({
+        url: `${apiPath}/detail/${id}`,
+        method: 'get',
+    })
 }
 
 /**
@@ -48,9 +49,47 @@ export function detail(id) {
  * @returns {*}
  */
 export function remove(data) {
-  return request({
-    url: `${apiPath}`,
-    method: 'delete',
-    data: data
-  })
+    return request({
+        url: `${apiPath}`,
+        method: 'delete',
+        data: data
+    })
+}
+
+
+/**
+ * 修改用户信息
+ * @returns {*}
+ */
+export function resetPassword(id) {
+    return request({
+        url: `${apiPath}/resetPassword`,
+        method: 'post',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        data: qs.stringify({"userId": id})
+    })
+}
+
+/**
+ * 修改用户信息
+ * @returns {*}
+ */
+export function updateUserProfile(data) {
+    return request({
+        url: `${apiPath}/updateUserProfile`,
+        method: 'put',
+        data: data
+    })
+}
+
+/**
+ * 修改密码
+ * @returns {*}
+ */
+export function updatePassword(data) {
+    return request({
+        url: `${apiPath}/updatePassword`,
+        method: 'put',
+        data: data
+    })
 }
