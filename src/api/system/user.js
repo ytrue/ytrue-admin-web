@@ -93,3 +93,17 @@ export function updatePassword(data) {
         data: data
     })
 }
+
+
+/**
+ * 修改头像
+ * @param data
+ * @returns {*}
+ */
+export function updateUserAvatar(data) {
+    return request({
+        url: `${apiPath}/updateUserAvatar`,
+        method: 'post',
+        data: data
+    })
+}

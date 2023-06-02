@@ -40,6 +40,7 @@
 
 <script setup>
 import { getToken } from "@/utils/auth";
+import {computed, getCurrentInstance, ref, watch} from "vue";
 
 const props = defineProps({
   modelValue: [String, Object, Array],
@@ -70,7 +71,7 @@ const emit = defineEmits();
 const number = ref(0);
 const uploadList = ref([]);
 const baseUrl = import.meta.env.VITE_APP_BASE_API;
-const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + "/common/upload"); // 上传文件服务器地址
+const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + "/file/upload"); // 上传文件服务器地址
 const headers = ref({ Authorization: "Bearer " + getToken() });
 const fileList = ref([]);
 const showTip = computed(
@@ -133,13 +134,13 @@ function handleUploadError(err) {
 
 // 上传成功回调
 function handleUploadSuccess(res, file) {
-  if (res.code === 200) {
-    uploadList.value.push({ name: res.fileName, url: res.fileName });
+  if (res.code === 2000) {
+    uploadList.value.push({name: res.data.fileName, url: res.data.url});
     uploadedSuccessfully();
   } else {
     number.value--;
     proxy.$modal.closeLoading();
-    proxy.$modal.msgError(res.msg);
+    proxy.$modal.msgError(res.message);
     proxy.$refs.fileUpload.handleRemove(file);
     uploadedSuccessfully();
   }

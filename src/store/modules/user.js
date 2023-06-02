@@ -36,11 +36,11 @@ const useUserStore = defineStore(
                 return new Promise((resolve, reject) => {
                     getInfo().then(res => {
                         const user = res.data.user
-                        const avatar = (user.avatar == "" || user.avatar == null) ? defAva : import.meta.env.VITE_APP_BASE_API + user.avatar;
-
-                        console.log(res.data)
-
+                        // 设置头像
+                        const avatar = user.avatarPath;
+                        // 角色
                         let roles = res.data.roleCodes
+                        // 权限
                         let permissions = res.data.permissions
 
                         if (roles && roles.length > 0) { // 验证返回的roles是否是一个非空数组

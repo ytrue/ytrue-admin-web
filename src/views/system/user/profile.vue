@@ -10,7 +10,7 @@
           </template>
           <div>
             <div class="text-center">
-              <img src="http://localhost:7878/src/assets/images/avatar.jpeg" title="点击上传头像" class="avatar">
+
             </div>
             <ul class="list-group list-group-striped">
               <li class="list-group-item">
@@ -75,6 +75,11 @@
           <el-tabs v-model="activeTab">
             <el-tab-pane label="基本资料" name="baseInfo">
               <el-form ref="baseInfoRef" :model="state.user" :rules="baseInfoRules" label-width="80px">
+                <el-form-item label="用户头像" prop="avatarPath">
+                  <image-upload :limit="1" :model-value="state.user.avatarPath"
+                                @update:modelValue="updateAvatarPath"></image-upload>
+                </el-form-item>
+
                 <el-form-item label="用户昵称" prop="nickName">
                   <el-input v-model="state.user.nickName" maxlength="30"/>
                 </el-form-item>
@@ -99,10 +104,12 @@
             <el-tab-pane label="修改密码" name="updatePassword">
               <el-form ref="updatePasswordRef" :model="updatePassword" :rules="updatePasswordRules" label-width="80px">
                 <el-form-item label="旧密码" prop="oldPassword">
-                  <el-input v-model="updatePassword.oldPassword" placeholder="请输入旧密码" type="password" show-password/>
+                  <el-input v-model="updatePassword.oldPassword" placeholder="请输入旧密码" type="password"
+                            show-password/>
                 </el-form-item>
                 <el-form-item label="新密码" prop="newPassword">
-                  <el-input v-model="updatePassword.newPassword" placeholder="请输入新密码" type="password" show-password/>
+                  <el-input v-model="updatePassword.newPassword" placeholder="请输入新密码" type="password"
+                            show-password/>
                 </el-form-item>
                 <el-form-item label="确认密码" prop="confirmPassword">
                   <el-input v-model="updatePassword.confirmPassword" placeholder="请确认新密码" type="password"
@@ -126,7 +133,9 @@ import {reactive, ref} from "vue";
 import {getInfo} from "@/api/login";
 import * as userApi from "@/api/system/user";
 import {ElMessage} from "element-plus";
-import useUserStore from "@//store/modules/user";
+import useUserStore from "@/store/modules/user";
+import ImageUpload from "@/components/ImageUpload/index.vue";
+
 const userStore = useUserStore()
 
 // 默认选择的ref
@@ -151,9 +160,11 @@ const updatePassword = reactive({
   confirmPassword: ''
 });
 
+
 // 修改用户信息表单验证规则
 const baseInfoRules = {
   nickName: [{required: true, message: "用户昵称不能为空", trigger: "blur"}],
+  avatarPath: [{required: true, message: "请上传头像", trigger: "blur"}],
   email: [{required: true, message: "邮箱地址不能为空", trigger: "blur"}, {
     type: "email",
     message: "请输入正确的邮箱地址",
@@ -191,6 +202,14 @@ const updatePasswordRules = {
 
 
 /**
+ * 修改头像值
+ * @param data
+ */
+function updateAvatarPath(data) {
+  state.value.user.avatarPath = data;
+}
+
+/**
  * 获取用户信息
  */
 function getUser() {
@@ -213,7 +232,9 @@ function updateProfileHandle() {
         email: state.value.user.email,
         phone: state.value.user.phone,
         gender: state.value.user.gender,
+        avatarPath: state.value.user.avatarPath,
       }).then((response) => {
+        userStore.avatar = state.value.user.avatarPath
         ElMessage({type: 'success', message: response.message})
       })
     } else {
