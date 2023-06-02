@@ -1,6 +1,7 @@
 import {getInfo, login, logout} from '@/api/login'
 import {getToken, removeToken, setToken} from '@/utils/auth'
 import defAva from '@//assets/images/avatar.jpeg'
+import {defineStore} from "pinia";
 
 const useUserStore = defineStore(
     'user',
@@ -17,10 +18,17 @@ const useUserStore = defineStore(
             login(userInfo) {
                 const username = userInfo.username.trim()
                 const password = userInfo.password
-                //const code = userInfo.code
+                const code = userInfo.code
+                const uuid = userInfo.uuid
 
+                // 调用登录
                 return new Promise((resolve, reject) => {
-                    login(username, password).then(res => {
+                    login(
+                        username,
+                        password,
+                        code,
+                        uuid
+                    ).then(res => {
                         const token = res.data.token
 
                         setToken(token)
